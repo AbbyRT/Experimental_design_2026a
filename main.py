@@ -20,13 +20,20 @@ import select
 # ===============================
 # SPI PIN CONFIGURATION
 # ===============================
-sck = Pin(18, Pin.OUT)
-cs = Pin(5, Pin.OUT)
-so = Pin(19, Pin.IN)
+sck = Pin(18, Pin.OUT) #clock
+cs = Pin(5, Pin.OUT) # chip select
+so = Pin(19, Pin.IN) #data from the sensor
 
 # ==================================
 # MAX6675 DRIVER CLASS
 # ==================================
+"""
+Temperature reading by applying a bit banging process:
+the SCK pin indicates when it's the time to send the data, it syncronizes the data transmission
+CS (chip select): as the name states, it indicates when the communication must be enabled.
+SO: it sends the data corresponding to the temperature reading
+
+"""
 class MAX6675:
     def __init__(self, sck, cs, so):
         self.sck = sck
@@ -35,10 +42,10 @@ class MAX6675:
         self.cs.value(1)
 
     def read(self):
-        self.cs.value(0)
+        self.cs.value(0) #chip activation
         time.sleep_us(10)
         value = 0
-        for _ in range(16):
+        for _ in range(16): #a bit is read by pulse, there are 16 pulses, 12 belongs to the temp reading
             self.sck.value(1)
             value <<= 1
             if self.so.value():
@@ -48,7 +55,7 @@ class MAX6675:
         if value & 0x4:
             return None
         value >>= 3
-        return value * 0.25
+        return value * 0.25 #data transformation, each unit represents 0.25 C (conversor resolution)
 
 # ===============================
 # SENSOR INITIALIZATION
@@ -148,4 +155,5 @@ except KeyboardInterrupt:
 if data:
     write_csv(csv_filename, data)
 else:
+
     print("Sin datos para guardar.")
